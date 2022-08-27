@@ -1,5 +1,7 @@
-import requests, re, urllib3
+import requests
+import re
 from urllib.parse import urlparse
+import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ParkedSearch(object):
@@ -32,7 +34,7 @@ class ParkedSearch(object):
             return None
         if res.is_redirect:
             location = res.headers['location']
-            target_domain = urlparse(self.url).netloc
+            target_domain = urlparse(url).netloc
             redirect_domain = urlparse(location).netloc
             if target_domain == redirect_domain or 'www.' + target_domain == redirect_domain or self.accept_new_domain:
                 return self.follow_url(location)
@@ -40,17 +42,28 @@ class ParkedSearch(object):
             return res.text
 
     def is_parked_urls(self, urls):
-        assert isinstance(urls, list), 'This method is reserved for lists, use .is_parked_url instead.'
+        assert isinstance(urls, list), 'This method is reserved for lists, use .is_parked_url instead for a string url.'
         for url in urls:
             url = url if url.startswith('http') else 'http://' + url
-
-            self.text_response = self.follow_url(url, self.timeout, self.allow_insecure, self.accept_new_domain)
+            self.text_response = self.follow_url(url)
             if self.text_response is None:
                 self.cache.setdefault(url, 'Unresponsive')
             elif not self.is_content_parked(self.text_response):
                 self.cache.setdefault(url, 'Active')
             elif self.is_content_parked(self.text_response):
                 self.cache.setdefault(url, 'Parked')
+        return self.cache
+
+    def is_parked_url(self, url):
+        assert isinstance(url, str), 'This method is reserved for a single string, use .is_parked_urls instead for lists.'
+        url = url if url.startswith('http') else 'http://' + url
+        text_response = self.follow_url(url)
+        if text_response is None:
+            self.cache.setdefault(url, 'Unresponsive')
+        elif not self.is_content_parked(text_response):
+            self.cache.setdefault(url, 'Active')
+        elif self.is_content_parked(text_response):
+            self.cache.setdefault(url, 'Parked')
         return self.cache
 
     def clear_cache(self):
@@ -61,17 +74,5 @@ class ParkedSearch(object):
             return False
 
     def get_cache(self):
-        return self.cache
-
-    def is_parked_url(self, url):
-        assert isinstance(url, str), 'This method is reserved for a single string, use .is_parked_urls instead for lists.'
-        url = url if url.startswith('http') else 'http://' + url
-        text_response = self.follow_url(self.url, self.timeout, self.allow_insecure, self.accept_new_domain)
-        if text_response is None:
-            self.cache.setdefault(url, 'Unresponsive')
-        elif not self.is_content_parked(text_response):
-            self.cache.setdefault(url, 'Active')
-        elif self.is_content_parked(text_response):
-            self.cache.setdefault(url, 'Parked')
         return self.cache
 
