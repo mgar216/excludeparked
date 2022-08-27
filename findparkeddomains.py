@@ -3,6 +3,8 @@
 import requests
 import re
 from urllib.parse import urlparse
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def is_content_parked(content):
     return any(re.findall(r'buy this domain|parked free|godaddy|is for sale'
@@ -42,11 +44,11 @@ def is_parked_urls(urls, accept_new_domain, allow_insecure, timeout):
 
         text_response = follow_url(url, timeout, allow_insecure, accept_new_domain)
         if text_response is None:
-            cache.setdefault(url, 'Domain Unresponse')
+            cache.setdefault(url, 'Unresponsive')
         elif not is_content_parked(text_response):
-            cache.setdefault(url, 'Domain Active')
+            cache.setdefault(url, 'Active')
         elif is_content_parked(text_response):
-            cache.setdefault(url, 'Domain Parked')
+            cache.setdefault(url, 'Parked')
     return cache
         
 
