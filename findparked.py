@@ -1,7 +1,5 @@
-import requests
-import re
+import requests, re, urllib3
 from urllib.parse import urlparse
-import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class ParkedSearch(object):
