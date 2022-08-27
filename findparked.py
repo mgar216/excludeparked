@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-class ParkedSearch(object):
+class FindParked(object):
     def __init__(self, timeout: int=5, allow_insecure: bool=True, accept_new_domain: bool=True):
         self.timeout = timeout
         self.allow_insecure = allow_insecure
