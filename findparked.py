@@ -62,6 +62,9 @@ class ParkedSearch(object):
         else:
             return False
 
+    def get_cache(self):
+        return self.cache
+
     def is_parked_url(self, url):
         assert isinstance(url, str), 'This method is reserved for a single string, use .is_parked_urls instead for lists.'
         url = url if url.startswith('http') else 'http://' + url
@@ -73,3 +76,4 @@ class ParkedSearch(object):
         elif self.is_content_parked(text_response):
             self.cache.setdefault(url, 'Parked')
         return self.cache
+
