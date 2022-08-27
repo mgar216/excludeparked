@@ -1,15 +1,21 @@
 import requests
 import re
+from nslookup import Nslookup
 from urllib.parse import urlparse
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
 class ParkedSearch(object):
-    def __init__(self, timeout: int=5, allow_insecure: bool=True, accept_new_domain: bool=True):
+    def __init__(self, timeout: int=5, allow_insecure: bool=True, accept_new_domain: bool=True, dns_servers: list=[]):
         self.timeout = timeout
         self.allow_insecure = allow_insecure
         self.accept_new_domain = accept_new_domain
+        self.dns_servers = dns_servers
+        self.dns_resolution = None
+        self.ip_count = None
         self.cache = {}
+        self.ip_cache = {}
 
     def is_content_parked(self, content):
         return any(re.findall(r'buy this domain|parked free|godaddy|is for sale'
@@ -66,6 +72,34 @@ class ParkedSearch(object):
             self.cache.setdefault(url, 'Parked')
         return self.cache
 
+    def verify_on_ips(self, urls, dns_servers: list=['1.1.1.1']):
+        assert isinstance(urls, list), 'A list is required to use this method, otherwise the result will always be 0 or 1 for a count.'
+        dns_query = Nslookup(dns_servers=dns_servers if not self.dns_servers else self.dns_servers if self.dns_servers else [], verbose=False, tcp=False)
+        small_ip_cache = {}
+        count_ip_cache = {}
+        for url in urls:
+            url = url if not url.startswith('http') else url.split('//')[1].strip('www.').rstrip('/')
+            ips_record = dns_query.dns_lookup(url)
+            small_ip_cache.setdefault(url, ips_record.answer)
+        for ipx in small_ip_cache.values():
+            for ix in ipx:
+                for ip in small_ip_cache.values():
+                    for p in ip:
+                        if p == ix:
+                            count_ip_cache.setdefault(p, 1) + 1
+        self.ip_cache = {
+            'dns_resolution': {**small_ip_cache},
+            'ip_count': {**count_ip_cache}
+        }
+        self.dns_resolution = self.ip_cache['dns_resolution']
+        self.ip_count = self.ip_cache['ip_count']
+
+    def get_ip_cache(self):
+        return self.ip_cache
+
+    def get_cache(self):
+        return self.cache
+    
     def clear_cache(self):
         self.cache = {}
         if not self.cache:
@@ -73,6 +107,10 @@ class ParkedSearch(object):
         else:
             return False
 
-    def get_cache(self):
-        return self.cache
+    def clear_ip_cache(self):
+        self.ip_cache = {}
+        if not self.ip_cache:
+            return True
+        else:
+            return False
 
