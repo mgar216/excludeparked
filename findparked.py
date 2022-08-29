@@ -49,6 +49,7 @@ class ParkedSearch(object):
 
     def is_parked_urls(self, urls):
         assert isinstance(urls, list), 'This method is reserved for lists, use .is_parked_url instead for a string url.'
+        urls = [i for n, i in enumerate(urls) if i not in urls[:n]]
         for url in urls:
             url = url if url.startswith('http') else 'http://' + url
             self.text_response = self.follow_url(url)
@@ -63,7 +64,10 @@ class ParkedSearch(object):
     def is_parked_url(self, url):
         assert isinstance(url, str), 'This method is reserved for a single string, use .is_parked_urls instead for lists.'
         url = url if url.startswith('http') else 'http://' + url
-        text_response = self.follow_url(url)
+        cache = []
+        if url not in cache:
+            text_response = self.follow_url(url)
+            cache.append(url)
         if text_response is None:
             self.cache.setdefault(url, 'Unresponsive')
         elif not self.is_content_parked(text_response):
@@ -113,4 +117,3 @@ class ParkedSearch(object):
             return True
         else:
             return False
-
